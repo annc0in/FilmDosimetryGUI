@@ -1,212 +1,191 @@
-A comprehensive tool for film dosimetry analysis that supports both graphical user interface operation and direct script execution in Octave. The application performs calibration curve creation, film processing, and detailed dose distribution analysis.
+# FilmDosimetryGUI
 
-**Repository Structure**
+A comprehensive tool for film dosimetry analysis that supports both graphical user interface operation and direct script execution in Octave.  
+The application performs calibration curve creation, film processing, and detailed dose distribution analysis.
 
-This repository contains the application code and scripts but does not include experimental data folders containing calibration and experimental film TIF files, or XLSX files with delivered doses. These data folders must be provided separately.
+---
 
-**Core Files**
+## Repository Structure
 
-- main.py – Main application entry point with user instructions
-- calibration_screen.py – Calibration & Film Processing interface
-- processing_screen.py – Real-time calibration processing display
-- analysis_screen.py – Image Analysis & Dose Calculation interface
-- progress_screen.py – Real-time analysis processing display
-- requirements.txt – Python dependencies
+This repository contains the application code and scripts but does not include experimental data folders containing calibration and experimental film TIF files, or XLSX files with delivered doses.  
+These data folders must be provided separately.
 
-**Octave Scripts**
+### Core Files
+- `main.py` – Main application entry point with user instructions
+- `calibration_screen.py` – Calibration & Film Processing interface
+- `processing_screen.py` – Real-time calibration processing display
+- `analysis_screen.py` – Image Analysis & Dose Calculation interface
+- `progress_screen.py` – Real-time analysis processing display
+- `requirements.txt` – Python dependencies
 
-- Check_calibration_XD_add_films.m – Calibration & Film Processing script
-- functions/ – 5 supporting functions for processing
-- scripts/analyze_shots_films_MOD_centering_Charge_Density_bgnd.m – Analysis script
-- scripts/functions/ – 6 supporting functions for analysis
+### Octave Scripts
+- `Check_calibration_XD_add_films.m` – Calibration & Film Processing script
+- `functions/` – 5 supporting functions for processing
+- `scripts/analyze_shots_films_MOD_centering_Charge_Density_bgnd.m` – Analysis script
+- `scripts/functions/` – 6 supporting functions for analysis
 
-**Build Resources**
+### Build Resources
+- `build.sh` – Linux build script
+- `resources.qrc` – Resources (icons, logos), compiled to `resources_rc.py`
+- `_icons/` – Application icons (ico, png, icns)
+- `_logos/` – CERN and CLEAR logos (svg, png)
 
-- build.sh – Linux build script
-- resources.qrc – Resources (icons, logos), compiled to resources_rc.py
-- \_icons/ – Application icons (ico, png, icns)
-- \_logos/ – CERN and CLEAR logos (svg, png)
+Maintaining this structure is mandatory for correct operation of both the GUI application and direct Octave script execution.  
+During application execution, additional folders and temporary files are created and cleaned up.
 
-Maintaining this structure is mandatory for correct operation of both the GUI application and direct Octave script execution. During application execution, additional folders and temporary files are created and cleaned up.
+---
 
-**Development Setup**
+## Development Setup
 
-**Prerequisites:** Python 3.8+ is recommended (tested with 3.11). Any Python IDE/editor can be used (development was done in VS Code).
+### Prerequisites
+- Python 3.8+ (tested with 3.11)  
+- Any Python IDE/editor (development was done in VS Code)
 
-1.  **Clone repository:**
+---
 
-\`\`\`bash
-
+### 1. Clone repository
+```bash
 git clone https://github.com/annc0in/FilmDosimetryGUI.git
-
 cd FilmDosimetryGUI
-
-\`\`\`
-
+```
 If Git is not installed, you can download ZIP.
 
-1.  **Create and activate virtual environment:**
+---
 
-\`\`\`bash
+### 2. Create and activate virtual environment
 
+```bash
 python -m venv venv
-
-\`\`\`
+```
 
 **Windows CMD:**
-
-\`\`\`cmd
-
-venv\\Scripts\\activate.bat
-
-\`\`\`
+```cmd
+venv\Scripts\activate.bat
+```
 
 **Windows PowerShell:**
-
-\`\`\`powershell
-
-venv\\Scripts\\Activate.ps1
-
-\`\`\`
+```powershell
+venv\Scripts\Activate.ps1
+```
 
 **Linux/macOS:**
-
-\`\`\`bash
-
+```bash
 source venv/bin/activate
+```
 
-\`\`\`
+---
 
-1.  **Install dependencies:**
-
-\`\`\`bash
-
+### 3. Install dependencies
+```bash
 pip install -r requirements.txt
-
-\`\`\`
+```
 
 This installs:
+- **PyQt6, pyqt6_sip** — Main GUI libraries
+- **PyQt5** — For compiling `resources.qrc` to `resources_rc.py`
+- **PyInstaller** — For building executables
 
-- - **PyQt6, pyqt6_sip** -- Main GUI libraries
-    - **PyQt5** -- For compiling resources.qrc to resources_rc.py
-    - **PyInstaller** -- For building executables
+---
 
-1.  **Compile resources:**
-
-\`\`\`bash
-
+### 4. Compile resources
+```bash
 pyrcc5 resources.qrc -o resources_rc.py
+```
 
-\`\`\`
+**Important:** After compilation, manually edit `resources_rc.py` and change the import from **PyQt5** to **PyQt6** to avoid build conflicts.
 
-**Important:** After compilation, manually edit resources_rc.py and change the import from PyQt5 to PyQt6 to avoid build conflicts.
+---
 
-**Architecture**
+## Architecture
 
-**Screen Management**
-
-- QStackedWidget for screen navigation
+### Screen Management
+- `QStackedWidget` for screen navigation
 - Modular screen classes with common interface patterns
 - Dynamic theme adaptation for dark/light modes
 
-**Data Flow**
+### Data Flow
+1. **UI Input** → JSON parameter files  
+2. **Octave Processing** → File-based output monitoring  
+3. **Result Display** → Dynamic table population and image loading  
 
-1.  **UI Input** → JSON parameter files
-2.  **Octave Processing** → File-based output monitoring
-3.  **Result Display** → Dynamic table population and image loading
-
-**Octave Integration**
-
-The application uses QProcess to execute Octave scripts as subprocesses with carefully configured environments:
+### Octave Integration
+The application uses `QProcess` to execute Octave scripts as subprocesses with carefully configured environments.
 
 **Windows Environment**
-
 - Automatically locates Octave installation in common directories
 - Configures PATH to include Octave binaries and system utilities
-- Sets OCTAVE_GUI_MODE=1 for GUI communication
+- Sets `OCTAVE_GUI_MODE=1` for GUI communication
 - Loads required packages
 
 **Linux Environment**
-
-- Uses system Octave (/usr/bin/octave)
-- Sets QT_QPA_PLATFORM=offscreen for headless operation
+- Uses system Octave (`/usr/bin/octave`)
+- Sets `QT_QPA_PLATFORM=offscreen` for headless operation
 - Configures UTF-8 locale environment
 - Runtime directory management for sandboxed execution
 
-**Communication Protocol**
-
-- **Input:** JSON parameter files (user_inputs.json, get_user_inputs.json)
+### Communication Protocol
+- **Input:** JSON parameter files (`user_inputs.json`, `get_user_inputs.json`)  
 - **Output:**
-    - Real-time stdout/stderr capture
-    - Structured data files for results tables
-    - Progress monitoring through file system events
+  - Real-time stdout/stderr capture  
+  - Structured data files for results tables  
+  - Progress monitoring through file system events  
+
 - **File Monitoring:** Timer-based polling for result files and image generation
 
-**Key Integration Features**
+### Key Integration Features
+- **Process Control:** Start, pause (terminate), and cleanup operations  
+- **Progress Tracking:** Real-time progress bars based on console output parsing  
+- **Image Display:** Dynamic loading and scaling of generated calibration curves  
+- **Error Handling:** Filtered stderr processing to suppress package warnings  
+- **Resource Management:** Automatic cleanup of temporary files on completion  
 
-- **Process Control:** Start, pause (terminate), and cleanup operations
-- **Progress Tracking:** Real-time progress bars based on console output parsing
-- **Image Display:** Dynamic loading and scaling of generated calibration curves
-- **Error Handling:** Filtered stderr processing to suppress package warnings
-- **Resource Management:** Automatic cleanup of temporary files on completion
+---
 
-**Building Executables**
+## Building Executables
 
-**Windows**
+### Windows
 
-**Command:**
-
-\`\`\`cmd
-
-cd path\\to\\project\\directory
-
-venv\\Scripts\\activate.bat
-
+**CMD:**
+```cmd
+cd path	o\project\directory
+venv\Scripts\activate.bat
 pyinstaller --onefile --windowed --icon=_icons/icon.ico --name "FilmDosimetryGUI" main.py && rmdir /s /q build && del FilmDosimetryGUI.spec && move dist\FilmDosimetryGUI.exe . && rmdir /s /q dist
-
-\`\`\`
+```
 
 **PowerShell:**
-
-\`\`\`powershell
-
-cd path\\to\\project\\directory
-
-venv\\Scripts\\Activate.ps1
-
+```powershell
+cd path	o\project\directory
+venv\Scripts\Activate.ps1
 pyinstaller --onefile --windowed --icon="_icons/icon.ico" --name "FilmDosimetryGUI" main.py; Remove-Item -Recurse -Force build,FilmDosimetryGUI.spec -ErrorAction SilentlyContinue; Move-Item dist/FilmDosimetryGUI.exe .; Remove-Item -Recurse -Force dist
+```
 
-\`\`\`
+**Output:** `FilmDosimetryGUI.exe` in the project root directory
 
-**Output:** FilmDosimetryGUI.exe in the project root directory
+---
 
-**Linux**
+### Linux
 
-1.  **Make the build script executable (first time only):**
-
-\`\`\`bash
-
+1. Make the build script executable (first time only):
+```bash
 chmod +x build.sh
+```
 
-\`\`\`
-
-1.  **Run the build script:**
-
-\`\`\`bash
-
+2. Run the build script:
+```bash
 cd /path/to/project/directory
-
 ./build.sh
+```
 
-\`\`\`
+**Output:** `FilmDosimetryGUI.AppImage` in the project root directory
 
-**Output:** FilmDosimetryGUI.AppImage in the project root directory
+---
 
-**Distribution**
+## Distribution
 
 After successful build:
 
-1.  Archive the executable file along with required resources
-2.  Upload to cloud storage or distribution platform https://cernbox.cern.ch/files/link/public/zJaBjp1r5uISVSY/!New%20versions%20and%20description%20of%20modifications/FilmDosimetryGUI?items-per-page=100&view-mode=resource-table&tiles-size=1
-3.  Users can download the appropriate archive for their operating system
-4.  The application runs standalone without requiring Python installation
+1. Archive the executable file along with required resources  
+2. Upload to cloud storage or distribution platform  
+   [CERNBox link](https://cernbox.cern.ch/files/link/public/zJaBjp1r5uISVSY/!New%20versions%20and%20description%20of%20modifications/FilmDosimetryGUI?items-per-page=100&view-mode=resource-table&tiles-size=1)  
+3. Users can download the appropriate archive for their operating system  
+4. The application runs standalone without requiring Python installation
