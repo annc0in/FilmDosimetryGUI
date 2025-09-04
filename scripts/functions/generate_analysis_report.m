@@ -34,33 +34,27 @@ function generate_analysis_report(film_names, Dose_CD_all, Dose_with_BGND_Gy_all
     % Plot with proper Octave-compatible error bars
     h1 = errorbar(x_vals, Dose_with_BGND_Gy_all, Dose_with_BGND_Gy_std_all, '~');
     set(h1, 'linestyle', 'none', 'linewidth', 1.2, 'color', [0.2 0.4 0.8]);
-    h1_plot = plot(x_vals, Dose_with_BGND_Gy_all, '-o', 'linewidth', 1.2, ...
-                  'markerfacecolor', [0.2 0.4 0.8], 'color', [0.2 0.4 0.8], 'markersize', 4.5);
+    h1_plot = plot(x_vals, Dose_with_BGND_Gy_all, '-o', 'linewidth', 1.2, 'markerfacecolor', [0.2 0.4 0.8], 'color', [0.2 0.4 0.8], 'markersize', 4.5);
 
     h2 = errorbar(x_vals, Dose_Gy_all, Dose_Gy_std_all, '~');
     set(h2, 'linestyle', 'none', 'linewidth', 1.2, 'color', [0.2 0.8 0.2]);
-    h2_plot = plot(x_vals, Dose_Gy_all, '-d', 'linewidth', 1.2, ...
-                  'markerfacecolor', [0 0.6 0], 'color', [0 0.6 0], 'markersize', 4.5);
+    h2_plot = plot(x_vals, Dose_Gy_all, '-d', 'linewidth', 1.2, 'markerfacecolor', [0 0.6 0], 'color', [0 0.6 0], 'markersize', 4.5);
 
     h3 = errorbar(x_vals, Dose_CD_all, Dose_CD_std_all, '~');
     set(h3, 'linestyle', 'none', 'linewidth', 1, 'color', [0.8 0.2 0.2]);
-    h3_plot = plot(x_vals, Dose_CD_all, '-s', 'linewidth', 1, ...
-                  'markerfacecolor', [0.8 0.2 0.2], 'color', [0.8 0.2 0.2], 'markersize', 3.5);
+    h3_plot = plot(x_vals, Dose_CD_all, '-s', 'linewidth', 1, 'markerfacecolor', [0.8 0.2 0.2], 'color', [0.8 0.2 0.2], 'markersize', 3.5);
 
     if any(Dose_ROI_mask_all > 0)
         h4 = errorbar(x_vals, Dose_ROI_mask_all, Dose_ROI_mask_std_all, '~');
         set(h4, 'linestyle', 'none', 'linewidth', 1.2, 'color', [0.9 0.8 0]);
-        h4_plot = plot(x_vals, Dose_ROI_mask_all, '-^', 'linewidth', 1.2, ...
-                      'markerfacecolor', [0.9 0.8 0], 'color', [0.9 0.8 0], 'markersize', 4.5);
+        h4_plot = plot(x_vals, Dose_ROI_mask_all, '-^', 'linewidth', 1.2, 'markerfacecolor', [0.9 0.8 0], 'color', [0.9 0.8 0], 'markersize', 4.5);
     else
         h4_plot = [];
     endif
 
-    h5_plot = plot(x_vals, calibrated_dose_cd1, '-x', 'linewidth', 1.3, ...
-                  'color', [0.5 0 0.8], 'markersize', 3, 'markeredgecolor', [0.5 0 0.8]);
+    h5_plot = plot(x_vals, calibrated_dose_cd1, '-x', 'linewidth', 1.3, 'color', [0.5 0 0.8], 'markersize', 3, 'markeredgecolor', [0.5 0 0.8]);
 
-    h6_plot = plot(x_vals, calibrated_dose_cd2, '-x', 'linewidth', 1.3, ...
-                  'color', [1 0.6 0.8], 'markersize', 3, 'markeredgecolor', [1 0.6 0.8]);
+    h6_plot = plot(x_vals, calibrated_dose_cd2, '-x', 'linewidth', 1.3, 'color', [1 0.6 0.8], 'markersize', 3, 'markeredgecolor', [1 0.6 0.8]);
 
     % Format plot to match original
     xlim([0.5, n + 0.5]);
@@ -84,8 +78,8 @@ function generate_analysis_report(film_names, Dose_CD_all, Dose_with_BGND_Gy_all
     if any(Dose_ROI_mask_all > 0)
         legend_items{end+1} = 'Dose lead';
     endif
-    legend_items{end+1} = 'Coeff_bg * CD';
-    legend_items{end+1} = 'Coeff * CD';
+    legend_items{end+1} = 'Avg coeff_bg * CD';
+    legend_items{end+1} = 'Avg coeff * CD';
 
     legend_handles = [h1_plot, h2_plot, h3_plot];
     if any(Dose_ROI_mask_all > 0)
@@ -93,8 +87,7 @@ function generate_analysis_report(film_names, Dose_CD_all, Dose_with_BGND_Gy_all
     endif
     legend_handles = [legend_handles, h5_plot, h6_plot];
 
-    legend(legend_handles, legend_items, 'Location', 'north', ...
-           'FontSize', 7, 'Box', 'on', 'EdgeColor', [0.5 0.5 0.5], 'Orientation', 'horizontal', 'Interpreter', 'none');
+    legend(legend_handles, legend_items, 'Location', 'north', 'FontSize', 7, 'Box', 'on', 'EdgeColor', [0.5 0.5 0.5], 'Orientation', 'horizontal', 'Interpreter', 'none');
 
     % 2. Measurements Table
     n_rows = length(film_names) + 1;
@@ -298,7 +291,7 @@ function generate_analysis_report(film_names, Dose_CD_all, Dose_with_BGND_Gy_all
                     mask_numbers = [mask_numbers sprintf(', %d', selected_masks(i))];
                 endif
             endfor
-            combined_text = [combined_text ' (selected lead masks: ' mask_numbers ')'];
+            combined_text = [combined_text ' (selected masks: ' mask_numbers ')'];
         endif
 
         text(0.1, y_pos, combined_text, 'FontSize', 12, 'FontWeight', 'bold');

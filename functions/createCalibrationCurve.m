@@ -2,7 +2,6 @@ function [calibration_dir, coeff1, Dose_non_Gy, Dose_non_Gy_std, Dose_calAll, li
     createCalibrationCurve(window_meas, create_plots, save_plots, cal_dir, polynomial_degree)
 
     warning('off', 'Octave:shadowed-function');
-    pkg load optim;
     pkg load io;
     warning('on', 'Octave:shadowed-function');
 

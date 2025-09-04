@@ -26,7 +26,6 @@ class CalibrationScreen(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
-        # Create all sections
         header = self._create_header()
         content_widget = QWidget()
         content_layout = QHBoxLayout(content_widget)
@@ -45,8 +44,10 @@ class CalibrationScreen(QWidget):
         main_layout.addWidget(content_widget, stretch=1)
         main_layout.addWidget(footer)
         
-        # Initialize data after UI creation
-        QTimer.singleShot(0, self._initialize_data)
+        # Set proper stretch factors
+        main_layout.setStretch(0, 0)
+        main_layout.setStretch(1, 1)
+        main_layout.setStretch(2, 0)
     
     def _create_header(self):
         header = QWidget()
@@ -113,7 +114,7 @@ class CalibrationScreen(QWidget):
         right_panel = QWidget()
         right_panel.setMinimumWidth(0)
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setSpacing(15)
+        right_layout.setSpacing(10)
         
         # Create all form elements
         self.create_new_cal_cb = QCheckBox("Create new calibration")
@@ -139,10 +140,13 @@ class CalibrationScreen(QWidget):
         for section in sections[-2:]:
             right_layout.addWidget(section)
                 
+        # Add spacer to push content up
+        right_layout.addStretch()
+        
         # Start processing button
         self.start_processing_btn = QPushButton("Start processing")
-        self.start_processing_btn.setMinimumSize(500, 80)
-        self.start_processing_btn.setStyleSheet("font-size: 16px; font-weight: bold; margin-top: 10px;")
+        self.start_processing_btn.setMinimumSize(500, 60)
+        self.start_processing_btn.setStyleSheet("QPushButton { font-size: 16px; font-weight: bold; padding: 3px; border: none; }")
         self.start_processing_btn.clicked.connect(self.start_calibration_processing)
         right_layout.addWidget(self.start_processing_btn)
         

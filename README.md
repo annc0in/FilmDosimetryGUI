@@ -26,6 +26,7 @@ These data folders must be provided separately.
 
 ### Build Resources
 - `build.sh` – Linux build script
+- `octave_wrapper.sh`- macOS wrapper script for Octave process isolation
 - `resources.qrc` – Resources (icons, logos), compiled to `resources_rc.py`
 - `_icons/` – Application icons (ico, png, icns)
 - `_logos/` – CERN and CLEAR logos (svg, png)
@@ -123,6 +124,12 @@ The application uses `QProcess` to execute Octave scripts as subprocesses with c
 - Configures UTF-8 locale environment
 - Runtime directory management for sandboxed execution
 
+**macOS Environment**
+- Automatically sets execute permissions for wrapper script (`chmod 0o755`)
+- Unsets `DYLD_LIBRARY_PATH`, `QT_PLUGIN_PATH`, and other Qt variables
+- Clears Qt-related environment variables to prevent conflicts with PyQt6
+- Configures gnuplot environment (`GNUTERM=qt`) for PDF report generation
+
 ### Communication Protocol
 - **Input:** JSON parameter files (`user_inputs.json`, `get_user_inputs.json`)  
 - **Output:**
@@ -136,7 +143,7 @@ The application uses `QProcess` to execute Octave scripts as subprocesses with c
 - **Process Control:** Start, pause (terminate), and cleanup operations  
 - **Progress Tracking:** Real-time progress bars based on console output parsing  
 - **Image Display:** Dynamic loading and scaling of generated calibration curves  
-- **Error Handling:** Filtered stderr processing to suppress package warnings  
+- **Error Handling:** Filtered stderr processing to suppress harmless warnings  
 - **Resource Management:** Automatic cleanup of temporary files on completion  
 
 ---
@@ -177,6 +184,16 @@ cd /path/to/project/directory
 ```
 
 **Output:** `FilmDosimetryGUI.AppImage` in the project root directory
+
+### macOS
+
+```bash
+cd path/to/project/directory
+source venv/bin/activate
+pyinstaller --onedir --windowed --icon="_icons/icon.icns" --name "FilmDosimetryGUI" --add-data "octave_wrapper.sh:." main.py && rm -rf build FilmDosimetryGUI.spec && mv dist/FilmDosimetryGUI.app . && rm -rf dist
+```
+
+**Output:** `FilmDosimetryGUI.app` in the project root directory
 
 ---
 

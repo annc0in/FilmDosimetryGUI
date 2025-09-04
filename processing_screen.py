@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 import time
 import json
 import getpass
@@ -329,17 +330,19 @@ class ProcessingScreen(QWidget):
        self.pause_btn.setEnabled(True)
 
    def _configure_and_start_process(self):
-       """Configure and start Octave process"""
-       self.process = QProcess(self)
-       self.process.readyReadStandardOutput.connect(self._handle_stdout)
-       self.process.readyReadStandardError.connect(self._handle_stderr)
-       self.process.finished.connect(self._on_process_finished)
-       self.process.setWorkingDirectory(os.getcwd())
-       
-       if platform.system() == "Windows":
-           self._setup_windows_process()
-       else:
-           self._setup_linux_process()
+        """Configure and start Octave process"""
+        self.process = QProcess(self)
+        self.process.readyReadStandardOutput.connect(self._handle_stdout)
+        self.process.readyReadStandardError.connect(self._handle_stderr)
+        self.process.finished.connect(self._on_process_finished)
+        self.process.setWorkingDirectory(os.getcwd())
+        
+        if platform.system() == "Windows":
+            self._setup_windows_process()
+        elif platform.system() == "Darwin":
+            self._setup_macos_process()
+        else:
+            self._setup_linux_process()
 
    def _setup_windows_process(self):
         """Configure Windows process environment"""
@@ -360,7 +363,7 @@ class ProcessingScreen(QWidget):
         self.process.setProcessEnvironment(env)
 
         octave_command = (
-            "pkg load io; pkg load image; pkg load optim; "
+            "pkg load io; pkg load image; "
             "Check_calibration_XD_add_films();"
         )
         self.process.start(octave_path, ["--no-gui", "--eval", octave_command])
@@ -383,29 +386,68 @@ class ProcessingScreen(QWidget):
            "/usr/bin/octave",
            "--no-gui",
            "--eval",
-           "pkg load io image optim statistics; Check_calibration_XD_add_films();"
+           "pkg load io image statistics; Check_calibration_XD_add_films();"
        ]
        
        self.process.start("/usr/bin/env", env_vars)
 
+   def _setup_macos_process(self):
+        """Configure macOS process environment using wrapper script"""
+        # Auto-set execute permissions for wrapper
+        wrapper_path = os.path.join(os.getcwd(), "octave_wrapper.sh")
+        if os.path.exists(wrapper_path):
+            os.chmod(wrapper_path, 0o755)  # Give execute permissions automatically
+        
+        # Use minimal environment
+        env = QProcessEnvironment()
+        env.insert("PATH", "/usr/local/bin:/usr/bin:/bin")
+        env.insert("HOME", os.environ.get('HOME', ''))
+        
+        self.process.setProcessEnvironment(env)
+        
+        # Get path to wrapper script (relative to executable)
+        if hasattr(sys, '_MEIPASS'):
+            # Running as PyInstaller bundle
+            wrapper_path = os.path.join(sys._MEIPASS, "octave_wrapper.sh")
+        else:
+            # Running in development
+            wrapper_path = os.path.join(os.getcwd(), "octave_wrapper.sh")
+        
+        # Execute wrapper with current directory as argument
+        self.process.start("/bin/bash", [wrapper_path, os.getcwd()])
+
    def _find_octave_executable(self):
-       """Locate Octave executable on Windows"""
-       if platform.system() != "Windows":
-           return "/usr/bin/octave"
-       
-       search_roots = [
-           os.path.expandvars(r"%LOCALAPPDATA%\Programs\GNU Octave"),
-           r"C:\Program Files\GNU Octave",
-           r"C:\Program Files (x86)\GNU Octave"
-       ]
-       
-       for root in search_roots:
-           if os.path.exists(root):
-               for dirpath, _, filenames in os.walk(root):
-                   if "octave.exe" in filenames and "mingw64" in dirpath.lower():
-                       return os.path.join(dirpath, "octave.exe")
-       
-       return "octave.exe"
+        """Locate Octave executable on different platforms"""
+        if platform.system() == "Windows":
+            search_roots = [
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\GNU Octave"),
+                r"C:\Program Files\GNU Octave",
+                r"C:\Program Files (x86)\GNU Octave"
+            ]
+            
+            for root in search_roots:
+                if os.path.exists(root):
+                    for dirpath, _, filenames in os.walk(root):
+                        if "octave.exe" in filenames and "mingw64" in dirpath.lower():
+                            return os.path.join(dirpath, "octave.exe")
+            
+            return "octave.exe"
+        
+        elif platform.system() == "Darwin":
+            macos_paths = [
+                "/usr/local/bin/octave",
+                "/opt/homebrew/bin/octave",
+                "/usr/bin/octave"
+            ]
+            
+            for path in macos_paths:
+                if os.path.exists(path):
+                    return path
+            
+            return "octave"
+        
+        else:
+            return "/usr/bin/octave"
 
    def toggle_pause(self):
        """Terminate process and cleanup"""
@@ -521,31 +563,39 @@ class ProcessingScreen(QWidget):
        self._update_progress_from_output(raw_data)
 
    def _handle_stderr(self):
-       """Filter and process stderr output"""
-       if not self.process:
-           return
-           
-       data = self.process.readAllStandardError()
-       stderr = bytes(data).decode("utf-8", errors="ignore")
-       
-       # Filter common warnings
-       filter_patterns = [
-           "shadows a core library function",
-           "/packages/statistics-",
-           "statistics-1.7.5/PKG_ADD",
-           "load_packages_and_dependencies",
-           "load_packages",
-           "called from"
-       ]
-       
-       if any(pattern in stderr for pattern in filter_patterns):
-           return
+        """Filter and process stderr output"""
+        if not self.process:
+            return
+            
+        data = self.process.readAllStandardError()
+        stderr = bytes(data).decode("utf-8", errors="ignore")
+        
+        # On macOS, show all stderr for debugging
+        if platform.system() == "Darwin":
+            for line in stderr.split('\n'):
+                line = line.strip()
+                if line:
+                    self._append_console_output(f"[stderr] {line}\n")
+            return
+        
+        # Filter common warnings on other platforms
+        filter_patterns = [
+            "shadows a core library function",
+            "/packages/statistics-",
+            "statistics-1.7.5/PKG_ADD",
+            "load_packages_and_dependencies",
+            "load_packages",
+            "called from"
+        ]
+        
+        if any(pattern in stderr for pattern in filter_patterns):
+            return
 
-       # Display filtered errors
-       for line in stderr.split('\n'):
-           line = line.strip()
-           if line and not any(pattern in line.lower() for pattern in ["shadow", "statistics", "pkg_add", "load_packages"]):
-               self._append_console_output(f"[stderr] {line}\n")
+        # Display filtered errors
+        for line in stderr.split('\n'):
+            line = line.strip()
+            if line and not any(pattern in line.lower() for pattern in ["shadow", "statistics", "pkg_add", "load_packages"]):
+                self._append_console_output(f"[stderr] {line}\n")
 
    def _update_progress_from_output(self, output):
        """Update progress based on output content"""

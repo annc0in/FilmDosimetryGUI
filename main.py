@@ -2,6 +2,16 @@ import sys
 import os
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 sys.dont_write_bytecode = True
+# Fix working directory for macOS .app bundle
+if getattr(sys, 'frozen', False) and sys.platform == 'darwin':
+    exe_dir = os.path.dirname(sys.executable)
+    app_bundle_dir = exe_dir
+    while app_bundle_dir and not app_bundle_dir.endswith('.app'):
+        app_bundle_dir = os.path.dirname(app_bundle_dir)
+    
+    if app_bundle_dir.endswith('.app'):
+        base_dir = os.path.dirname(app_bundle_dir)
+        os.chdir(base_dir)
 import resources_rc
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QStackedWidget, 

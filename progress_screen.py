@@ -1,6 +1,7 @@
 import os
 import time
 import platform
+import sys
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                             QLabel, QProgressBar, QTextEdit, QTableWidget, 
                             QTableWidgetItem, QSplitter, QHeaderView, QApplication,
@@ -295,7 +296,9 @@ class AnalysisProgressScreen(QWidget):
     # Process control methods
     def start_analysis_process(self):
         """Start the Octave analysis process"""
-        os.environ['LC_ALL'] = 'C.UTF-8'
+        if platform.system() != "Darwin":
+            os.environ['LC_ALL'] = 'C.UTF-8'
+
         self.reset_ui_state()
         
         # Reset file monitoring
@@ -316,6 +319,8 @@ class AnalysisProgressScreen(QWidget):
         
         if platform.system() == "Windows":
             self.setup_windows_process()
+        elif platform.system() == "Darwin":
+            self.setup_macos_process()
         else:
             self.setup_linux_process()
         
@@ -338,7 +343,7 @@ class AnalysisProgressScreen(QWidget):
         self.process.setProcessEnvironment(env)
 
         octave_path = self.find_octave_executable()
-        octave_command = "cd('scripts'); pkg load io; pkg load image; pkg load optim; analyze_shots_films_MOD_centering_Charge_Density_bgnd();"
+        octave_command = "cd('scripts'); pkg load io; pkg load image; analyze_shots_films_MOD_centering_Charge_Density_bgnd();"
         self.process.start(octave_path, ["--no-gui", "--eval", octave_command])
 
     def setup_linux_process(self):
@@ -351,27 +356,60 @@ class AnalysisProgressScreen(QWidget):
         env.insert("LANG", "C.UTF-8")
         self.process.setProcessEnvironment(env)
         
-        octave_command = "cd('scripts'); pkg load io image optim; try analyze_shots_films_MOD_centering_Charge_Density_bgnd(); catch err error(['Error: ', err.message]); end"
+        octave_command = "cd('scripts'); pkg load io image; try analyze_shots_films_MOD_centering_Charge_Density_bgnd(); catch err error(['Error: ', err.message]); end"
         self.process.start("/usr/bin/octave", ["--no-gui", "--eval", octave_command])
 
+    def setup_macos_process(self):
+        """Configure macOS process environment using wrapper script"""
+        # Auto-set execute permissions for wrapper
+        wrapper_path = os.path.join(os.getcwd(), "octave_wrapper.sh")
+        if os.path.exists(wrapper_path):
+            os.chmod(wrapper_path, 0o755)
+        
+        # Use minimal environment
+        env = QProcessEnvironment()
+        env.insert("PATH", "/usr/local/bin:/usr/bin:/bin")
+        env.insert("HOME", os.environ.get('HOME', ''))
+        
+        self.process.setProcessEnvironment(env)
+        
+        octave_command = "cd('scripts'); pkg load io image; analyze_shots_films_MOD_centering_Charge_Density_bgnd();"
+        
+        # Execute wrapper with directory and command as arguments
+        self.process.start("/bin/bash", ["octave_wrapper.sh", os.getcwd(), octave_command])
+    
     def find_octave_executable(self):
-        """Locate Octave executable on Windows"""
-        if platform.system() != "Windows":
+        """Locate Octave executable on different platforms"""
+        if platform.system() == "Windows":
+            search_roots = [
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\GNU Octave"),
+                r"C:\Program Files\GNU Octave",
+                r"C:\Program Files (x86)\GNU Octave"
+            ]
+            
+            for root in search_roots:
+                if os.path.exists(root):
+                    for dirpath, dirnames, filenames in os.walk(root):
+                        if "octave.exe" in filenames and "mingw64" in dirpath.lower():
+                            return os.path.join(dirpath, "octave.exe")
+            
+            return "octave.exe"
+        
+        elif platform.system() == "Darwin":
+            macos_paths = [
+                "/usr/local/bin/octave",
+                "/opt/homebrew/bin/octave",
+                "/usr/bin/octave"
+            ]
+            
+            for path in macos_paths:
+                if os.path.exists(path):
+                    return path
+            
+            return "octave"
+        
+        else:
             return "/usr/bin/octave"
-        
-        search_roots = [
-            os.path.expandvars(r"%LOCALAPPDATA%\Programs\GNU Octave"),
-            r"C:\Program Files\GNU Octave",
-            r"C:\Program Files (x86)\GNU Octave"
-        ]
-        
-        for root in search_roots:
-            if os.path.exists(root):
-                for dirpath, dirnames, filenames in os.walk(root):
-                    if "octave.exe" in filenames and "mingw64" in dirpath.lower():
-                        return os.path.join(dirpath, "octave.exe")
-        
-        return "octave.exe"
 
     def reset_ui_state(self):
         """Reset UI elements to initial state"""
@@ -421,12 +459,29 @@ class AnalysisProgressScreen(QWidget):
         data = self.process.readAllStandardError()
         stderr = bytes(data).decode("utf-8", errors='ignore')
 
-        # Skip statistics package warnings and debug messages
-        if "/packages/statistics-" in stderr or "FC_WEIGHT didn't match" in stderr:
-            return
+        # Filter out specific gnuplot warnings and other unwanted output
+        filtered_lines = []
+        for line in stderr.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Skip gnuplot multiplot warnings from macOS
+            if "Reading from '-' inside a multiplot not supported" in line:
+                continue
+            if "use a datablock instead" in line:
+                continue
+            
+            # Skip warnings from Windows
+            if "/packages/statistics-" in line or "FC_WEIGHT didn't match" in line:
+                continue
+                
+            filtered_lines.append(line)
 
-        if stderr.strip():
-            self.console_output.append(f"ERROR: {stderr.strip()}")
+        # Only display if there are actual error messages
+        if filtered_lines:
+            error_text = '\n'.join(filtered_lines)
+            self.console_output.append(f"ERROR: {error_text}")
 
     def update_progress_from_output(self, output):
         """Update progress based on console output"""
