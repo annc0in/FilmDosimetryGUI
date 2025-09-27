@@ -373,10 +373,18 @@ class AnalysisProgressScreen(QWidget):
         
         self.process.setProcessEnvironment(env)
         
+        # Get path to wrapper script (like in processing_screen.py)
+        if hasattr(sys, '_MEIPASS'):
+            # Running as PyInstaller bundle
+            wrapper_path = os.path.join(sys._MEIPASS, "octave_wrapper.sh")
+        else:
+            # Running in development
+            wrapper_path = os.path.join(os.getcwd(), "octave_wrapper.sh")
+        
         octave_command = "cd('scripts'); pkg load io image; analyze_shots_films_MOD_centering_Charge_Density_bgnd();"
         
-        # Execute wrapper with directory and command as arguments
-        self.process.start("/bin/bash", ["octave_wrapper.sh", os.getcwd(), octave_command])
+        # Execute wrapper with full path and arguments
+        self.process.start("/bin/bash", [wrapper_path, os.getcwd(), octave_command])
     
     def find_octave_executable(self):
         """Locate Octave executable on different platforms"""

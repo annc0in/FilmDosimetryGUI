@@ -388,7 +388,7 @@ class CalibrationScreen(QWidget):
             available_dirs = self._dir_cache
         else:
             project_dirs = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
-            excluded_dirs = {'!CalibrationCurves', '!Processed', '!ROIlead', 'functions', 'scripts'}
+            excluded_dirs = {'!CalibrationCurves', '!Processed', '!ROIlead', 'functions', 'scripts', 'FilmDosimetryGUI.app'}
             available_dirs = [d for d in project_dirs 
                             if d not in excluded_dirs and not d.endswith('_CALIBRATED')]
             
