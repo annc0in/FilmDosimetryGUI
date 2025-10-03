@@ -203,6 +203,6 @@ After successful build:
 
 1. Archive the executable file along with required resources  
 2. Upload to cloud storage or distribution platform  
-   [CERNBox link](https://cernbox.cern.ch/files/link/public/zJaBjp1r5uISVSY/!New%20versions%20and%20description%20of%20modifications/FilmDosimetryGUI?items-per-page=100&view-mode=resource-table&tiles-size=1)  
+   [CERNBox link](https://cernbox.cern.ch/s/0Q4aSmoEJ99K9rl)  
 3. Users can download the appropriate archive for their operating system  
 4. The application runs standalone without requiring Python installation
