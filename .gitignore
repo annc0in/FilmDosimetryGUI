@@ -1,0 +1,31 @@
+# Ignore everything by default
+/*
+
+# Include essential files
+!/.gitignore
+!*.md
+!*.py
+resources_rc.py
+!requirements.txt
+!*.qrc
+!*.sh
+
+# Include icon and logo directories
+!/_icons/
+!/_logos/
+!_icons/**
+!_logos/**
+
+# Include Octave/MATLAB files
+!*.m
+!/functions/
+!/functions/**
+
+# Include scripts directory
+!/scripts/
+!/scripts/**
+
+# But exclude specific file types from scripts
+/scripts/*.mat
+/scripts/*.pdf
+/scripts/images

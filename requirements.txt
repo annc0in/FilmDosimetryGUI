@@ -1,0 +1,5 @@
+PyQt6
+pyqt6_sip
+PyQt5
+pyinstaller
+psutil

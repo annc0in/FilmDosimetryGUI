@@ -1,0 +1,7 @@
+<RCC>
+    <qresource>
+        <file>_logos/CERN.svg</file>
+        <file>_logos/CLEAR.svg</file>
+		<file>_icons/icon.png</file>
+    </qresource>
+</RCC>
